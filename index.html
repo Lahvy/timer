@@ -181,7 +181,7 @@
 
         .hidden { display: none; }
 
-        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner, kompaktnější) ===== */
+        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner, kompaktnější + centrovaný text) ===== */
 
         /* schování nativních šipek */
         input[type="number"]::-webkit-outer-spin-button,
@@ -200,16 +200,17 @@
             border-radius: 8px;
             border: 1px solid #4b5563;
             overflow: hidden;
+            height: 28px;                  /* celková výška komponenty */
         }
 
         .number-input input {
             border: none;
             background: transparent;
             color: #f9fafb;
-            padding: 4px 8px;              /* menší vertikální padding */
+            padding: 0 8px;               /* jen horizontální padding */
             font-size: 0.9rem;
             flex: 1;
-            height: 26px;                  /* celková výška inputu */
+            line-height: 28px;            /* text + placeholder vertikálně uprostřed */
         }
 
         .number-input input:focus {
@@ -220,13 +221,14 @@
             display: flex;
             flex-direction: column;
             border-left: 1px solid #4b5563;
+            height: 100%;                 /* zabere celou výšku komponenty */
         }
 
         .spinner-btn {
             border-radius: 0;
             padding: 0;
             width: 26px;
-            height: 13px;                  /* 2x13 = 26 -> zarovnání s inputem */
+            height: 50%;                  /* dvě tlačítka = celá výška */
             background: #020617;
             border: none;
             display: flex;
