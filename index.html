@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- PrimeIcons (součást ekosystému PrimeNG) -->
-    https://unpkg.com/primeicons/primeicons.css
+    <link rel="stylesheet" href="https://unpkg.com/primeicons/primeicons.css">
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -386,15 +386,13 @@ function playEndSound() {
 
         const now = audioContext.currentTime;
 
-        // Malá „znělka“ – sekvence 4 tónů v dur (cca 2 sekundy)
         const baseGain = 0.2;
 
-        // Časy v sekundách relativně k now
         const notes = [
             { freq: 784,  start: 0.0,  len: 0.4 }, // G5
             { freq: 880,  start: 0.4,  len: 0.4 }, // A5
             { freq: 1047, start: 0.8,  len: 0.4 }, // C6
-            { freq: 1319, start: 1.2,  len: 0.6 }  // E6 – delší, jako „doznění“
+            { freq: 1319, start: 1.2,  len: 0.6 }  // E6 – doznění
         ];
 
         notes.forEach((n, index) => {
@@ -414,7 +412,6 @@ function playEndSound() {
             osc.stop(now + n.start + n.len);
         });
 
-        // Volitelné: jemný podkladový nižší tón pod poslední notou pro „teplý“ efekt
         const padOsc = audioContext.createOscillator();
         const padGain = audioContext.createGain();
         padOsc.type = 'sine';
@@ -508,7 +505,7 @@ function startTimer() {
             startStopBtn.classList.remove("running");
             timerEl.classList.add("finished");
             setStatus("Čas vypršel.");
-            playEndSound();  // 🔔 PŘEHRÁT ZNĚLKU PO DOJETÍ ČASU
+            playEndSound();
         } else {
             updateTimer();
         }
