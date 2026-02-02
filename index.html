@@ -446,7 +446,10 @@ function startTimer() {
 function stopTimer() {
     if (!isRunning) return;
     isRunning = false;
-    clearInterval(timerInterval);
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
     remainingMs = Math.max(0, endTime - Date.now());
     startStopBtn.textContent = "Start";
     startStopBtn.classList.remove("running");
@@ -456,13 +459,16 @@ function stopTimer() {
 
 function resetTimer() {
     if (!initialDurationMs) return;
-    clearInterval(timerInterval);
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
     remainingMs = initialDurationMs;
     endTime = null;
     isRunning = false;
     startStopBtn.textContent = "Start";
     startStopBtn.classList.remove("running");
-   shed");
+    timerEl.classList.remove("finished");
     updateTimer();
     updateEndTime();
     setStatus("Odpočet resetován.");
@@ -481,7 +487,10 @@ saveCountdownBtn.addEventListener("click", () => {
 
     initialDurationMs = minutes * 60000;
     remainingMs = initialDurationMs;
-    clearInterval(timerInterval);
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
     isRunning = false;
     endTime = null;
 
