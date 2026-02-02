@@ -371,6 +371,37 @@ const saveNoteBtn = document.getElementById('saveNoteBtn');
 const spinnerUp = document.querySelector('.spinner-up');
 const spinnerDown = document.querySelector('.spinner-down');
 
+// Web Audio API – jemný zvuk na konci odpočtu
+let audioContext = null;
+function playEndSound() {
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        const duration = 0.4;       // délka zvuku v sekundách
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.type = 'sine';   // příjemný sinusový tón
+        oscillator.frequency.value = 880; // 880 Hz – jemnější než nízký tón
+
+        gainNode.gain.value = 0.15; // hlasitost (0–1), necháme nízko
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        const now = audioContext.currentTime;
+        oscillator.start(now);
+        // krátké fade-out, aby to neskončilo prudce
+        gainNode.gain.setValueAtTime(0.15, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        oscillator.stop(now + duration);
+    } catch (e) {
+        // když prohlížeč nebo oprávnění selžou, zvuk prostě ignorujeme
+        console.warn('Nepodařilo se přehrát zvuk:', e);
+    }
+}
+
 function clampMinutes(value) {
     if (isNaN(value)) value = 0;
     if (value < 1) return 1;
@@ -448,6 +479,7 @@ function startTimer() {
             startStopBtn.classList.remove("running");
             timerEl.classList.add("finished");
             setStatus("Čas vypršel.");
+            playEndSound();  // 🔔 PŘEHRÁT ZVUK PO DOJETÍ ČASU
         } else {
             updateTimer();
         }
@@ -551,3 +583,4 @@ setStatus("Nastav odpočet tlačítkem „Nový odpočet“.");
 </script>
 </body>
 </html>
+``
