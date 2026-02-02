@@ -145,21 +145,24 @@
             width: min(420px, 92vw);
         }
 
+        /* trochu větší mezera pod nadpisem */
         .modal h2 {
-            margin-bottom: 10px;
+            margin-bottom: 14px;
             font-size: 1.1rem;
         }
 
         .modal label {
             font-size: 0.95rem;
             color: #e5e7eb;
+            display: block;
+            margin-bottom: 6px; /* mezera mezi textem labelu a inputem */
         }
 
         .modal input,
         .modal textarea {
             width: 100%;
             padding: 8px 10px;
-            margin-top: 6px;
+            margin-top: 0;           /* už řídíme mezeru label/input jinak */
             margin-bottom: 16px;
             background: #020617;
             border-radius: 10px;
@@ -177,6 +180,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 8px;
+            margin-top: 14px;  /* mezera mezi inputem a tlačítky dole */
         }
 
         .btn-secondary { background: #111827; color:white; border:1px solid #4b5563; }
@@ -195,6 +199,7 @@
             border: 1px solid #4b5563;
             background: #020617;
             overflow: hidden;
+            margin-top: 4px;     /* malý odstup od labelu */
         }
 
         .input-with-icon input {
@@ -546,4 +551,3 @@ setStatus("Nastav odpočet tlačítkem „Nový odpočet“.");
 </script>
 </body>
 </html>
-``
