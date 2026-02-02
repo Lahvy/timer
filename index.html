@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Časomíra schůzky</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* ===== ZÁKLADNÍ STYL A POZADÍ ===== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #1f2933, #020617);
+            color: #f9fafb;
+            min-height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+        }
+
+        .app {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 24px 16px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(1.4rem, 2.3vw, 1.9rem);
+            font-weight: 600;
+            color: #e5e7eb;
+            letter-spacing: 0.03em;
+            margin-bottom: 10px;
+        }
+
+        .note-display {
+            min-height: 2.4em;
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: #facc15;
+            font-weight: 500;
+        }
+
+        .note-display.placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== ČASOMÍRA ===== */
+        .timer-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        #timer {
+            font-size: clamp(4rem, 20vw, 9rem); /* velké číslice */
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(15, 23, 42, 0.9);
+        }
+
+        #timer.finished {
+            color: #f97316; /* oranžová při skončení */
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); text-shadow: 0 0 15px rgba(248, 113, 113, 0.3); }
+            50% { transform: scale(1.03); text-shadow: 0 0 25px rgba(248, 113, 113, 0.7); }
+            100% { transform: scale(1); text-shadow: 0 0 15px rgba(248, 113, 113, 0.3); }
+        }
+
+        .end-time {
+            margin-top: 8px;
+            font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+            color: #9ca3af;
+        }
+
+        .end-time strong {
+            color: #e5e7eb;
+            font-weight: 600;
+        }
+
+        /* ===== OVLÁDACÍ TLAČÍTKA ===== */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        button {
+            border: none;
+            border-radius: 9999px;
+            padding: 8px 18px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        button:active {
+            transform: translateY(1px) scale(0.98);
+            box-shadow: none;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        #newCountdownBtn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+        }
+
+        #newCountdownBtn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        #startStopBtn {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            box-shadow: 0 8px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        #startStopBtn.running {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            box-shadow: 0 8px 20px rgba(249, 115, 22, 0.4);
+        }
+
+        #noteBtn {
+            background: #111827;
+            color: #e5e7eb;
+            border: 1px solid #374151;
+        }
+
+        #fullscreenBtn {
+            background: #0f172a;
+            color: #e5e7eb;
+            border: 1px solid #1f2937;
+        }
+
+        #resetBtn {
+            background: #111827;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+        }
+
+        .status-message {
+            min-height: 1.5em;
+            font-size: 0.95rem;
+            color: #9ca3af;
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: auto;
+        }
+
+        /* ===== MODÁLY ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .modal {
+            background: #020617;
+            border-radius: 16px;
+            padding: 20px 20px 16px;
+            width: min(420px, 92vw);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.9);
+            border: 1px solid #1f2937;
+        }
+
+        .modal h2 {
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+        }
+
+        .modal label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+
+        .modal input[type="number"],
+        .modal textarea {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #4b5563;
+            padding: 8px 10px;
+            background: #020617;
+            color: #f9fafb;
+            font-size: 0.95rem;
+            resize: vertical;
+            min-height: 40px;
+        }
+
+        .modal textarea {
+            min-height: 80px;
+        }
+
+        .modal input:focus,
+        .modal textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        .modal-actions {
+            margin-top: 12px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: #111827;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* ===== RESPONSIVITA ===== */
+        @media (max-width: 600px) {
+            .controls {
+                gap: 8px;
+            }
+
+            button {
+                padding: 7px 14px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header>
+        <h1>Časomíra schůzky</h1>
+        <div id="noteDisplay" class="note-display placeholder">
+            Přidej si poznámku (např. „Přestávka“) tlačítkem níže.
+        </div>
+    </header>
+
+    <main>
+        <div class="timer-display">
+            <span id="timer">00:00</span>
+        </div>
+
+        <div class="end-time">
+            <span id="endTimeLabel">Konec v: <strong>--:--</strong></span>
+        </div>
+
+        <div class="controls">
+            <button id="newCountdownBtn">Nový odpočet</button>
+            <button id="startStopBtn" disabled>Start</button>
+            <button id="resetBtn" disabled>Reset</button>
+            <button id="noteBtn">Poznámka</button>
+            <button id="fullscreenBtn">Celá obrazovka</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+    </main>
+
+    <footer>
+        Jednoduchá časomíra pro schůzky – HTML / CSS / JavaScript
+    </footer>
+
+    <!-- Modál: nový odpočet -->
+    <div id="countdownModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Nastavit odpočet</h2>
+            <label for="minutesInput">
+                Počet minut (1 – 600):
+            </label>
+            <input type="number" id="minutesInput" min="1" max="600" value="5">
+            <div class="modal-actions">
+                <button class="btn-secondary" data-close-modal="countdownModal">Zrušit</button>
+                <button class="btn-primary" id="saveCountdownBtn">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modál: poznámka -->
+    <div id="noteModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Nastavit poznámku</h2>
+            <label for="noteInput">
+                Text poznámky (např. „Přestávka“, „Začínáme za chvíli“…):
+            </label>
+            <textarea id="noteInput" placeholder="Přestávka"></textarea>
+            <div class="modal-actions">
+                <button class="btn-secondary" data-close-modal="noteModal">Zrušit</button>
+                <button class="btn-primary" id="saveNoteBtn">Uložit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== PROMĚNNÉ STAVU =====
+    let initialDurationMs = 0;   // Původní nastavení (v milisekundách)
+    let remainingMs = 0;         // Kolik času zbývá
+    let timerInterval = null;    // ID intervalu
+    let isRunning = false;       // Běží / neběží
+    let endTime = null;          // Datum a čas, kdy má odpočet skončit
+
+    // ===== ELEMENTY Z DOMU =====
+    const timerEl = document.getElementById('timer');
+    const endTimeLabelEl = document.getElementById('endTimeLabel');
+    const statusMessageEl = document.getElementById('statusMessage');
+    const noteDisplayEl = document.getElementById('noteDisplay');
+
+    const newCountdownBtn = document.getElementById('newCountdownBtn');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const noteBtn = document.getElementById('noteBtn');
+
+    const countdownModal = document.getElementById('countdownModal');
+    const minutesInput = document.getElementById('minutesInput');
+    const saveCountdownBtn = document.getElementById('saveCountdownBtn');
+
+    const noteModal = document.getElementById('noteModal');
+    const noteInput = document.getElementById('noteInput');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+
+    // ===== POMOCNÉ FUNKCE FORMÁTOVÁNÍ =====
+    function formatTime(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        const m = String(minutes).padStart(2, '0');
+        const s = String(seconds).padStart(2, '0');
+        return `${m}:${s}`;
+    }
+
+    function formatClock(date) {
+        if (!date) return '--:--';
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+
+    function updateTimerDisplay() {
+        timerEl.textContent = formatTime(remainingMs);
+    }
+
+    function updateEndTimeDisplay() {
+        const text = formatClock(endTime);
+        endTimeLabelEl.innerHTML = `Konec v: <strong>${text}</strong>`;
+    }
+
+    function setStatus(message) {
+        statusMessageEl.textContent = message || '';
+    }
+
+    // ===== MODÁLY =====
+    function openModal(modalEl) {
+        modalEl.classList.remove('hidden');
+    }
+
+    function closeModal(modalEl) {
+        modalEl.classList.add('hidden');
+    }
+
+    // Zavírání modálu po kliknutí na overlay
+    [countdownModal, noteModal].forEach(modal => {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal(modal);
+            }
+        });
+    });
+
+    // Zavírání modálu tlačítkem "Zrušit"
+    document.querySelectorAll('[data-close-modal]').forEach(btn => {
+        btn.addEventListener('click', (event) => {
+            const modalId = event.currentTarget.getAttribute('data-close-modal');
+            const modalEl = document.getElementById(modalId);
+            if (modalEl) closeModal(modalEl);
+        });
+    });
+
+    // ===== LOGIKA ODPOČTU =====
+    function startTimer() {
+        if (initialDurationMs <= 0) {
+            setStatus('Nejprve nastav odpočet.');
+            return;
+        }
+
+        // Pokud už jsme na nule, začni znovu od původního času
+        if (remainingMs <= 0) {
+            remainingMs = initialDurationMs;
+        }
+
+        // Nastav konec od aktuálního času
+        endTime = new Date(Date.now() + remainingMs);
+        updateEndTimeDisplay();
+
+        isRunning = true;
+        startStopBtn.textContent = 'Stop';
+        startStopBtn.classList.add('running');
+        timerEl.classList.remove('finished');
+        setStatus('Odpočet běží…');
+
+        // Bezpečnost: pokud už nějaký interval existuje, zruš ho
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        timerInterval = setInterval(() => {
+            const now = Date.now();
+            remainingMs = endTime - now;
+
+            if (remainingMs <= 0) {
+                remainingMs = 0;
+                updateTimerDisplay();
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isRunning = false;
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('running');
+                timerEl.classList.add('finished');
+                setStatus('Čas vypršel.');
+            } else {
+                updateTimerDisplay();
+            }
+        }, 200);
+
+        updateTimerDisplay();
+    }
+
+    function stopTimer() {
+        if (!isRunning) return;
+
+        isRunning = false;
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        // Přepočítat zbývající čas v momentě zastavení
+        remainingMs = Math.max(0, endTime - Date.now());
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        setStatus('Odpočet pozastaven.');
+        updateTimerDisplay();
+    }
+
+    function resetTimer() {
+        if (initialDurationMs <= 0) return;
+
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        isRunning = false;
+        remainingMs = initialDurationMs;
+        endTime = null;
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        timerEl.classList.remove('finished');
+        updateTimerDisplay();
+        updateEndTimeDisplay();
+        setStatus('Odpočet resetován.');
+    }
+
+    // ===== HANDLERY TLAČÍTEK =====
+    newCountdownBtn.addEventListener('click', () => {
+        openModal(countdownModal);
+        minutesInput.focus();
+        minutesInput.select();
+    });
+
+    saveCountdownBtn.addEventListener('click', () => {
+        const minutes = parseInt(minutesInput.value, 10);
+
+        if (isNaN(minutes) || minutes < 1 || minutes > 600) {
+            setStatus('Zadej prosím počet minut mezi 1 a 600.');
+            return;
+        }
+
+        initialDurationMs = minutes * 60 * 1000;
+        remainingMs = initialDurationMs;
+
+        // Reset aktuálního stavu
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        isRunning = false;
+        endTime = null;
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        timerEl.classList.remove('finished');
+
+        updateTimerDisplay();
+        updateEndTimeDisplay();
+        setStatus(`Odpočet nastaven na ${minutes} minut.`);
+        startStopBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        closeModal(countdownModal);
+    });
+
+    startStopBtn.addEventListener('click', () => {
+        if (isRunning) {
+            stopTimer();
+        } else {
+            startTimer();
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        resetTimer();
+    });
+
+    noteBtn.addEventListener('click', () => {
+        // Předvyplní textarea aktuální poznámkou
+        const currentNote = noteDisplayEl.classList.contains('placeholder')
+            ? ''
+            : noteDisplayEl.textContent;
+        noteInput.value = currentNote;
+        openModal(noteModal);
+        noteInput.focus();
+        noteInput.select();
+    });
+
+    saveNoteBtn.addEventListener('click', () => {
+        const text = noteInput.value.trim();
+        if (text === '') {
+            noteDisplayEl.textContent = 'Přidej si poznámku (např. „Přestávka“) tlačítkem níže.';
