@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="cs">
 <head>
@@ -181,78 +182,27 @@
 
         .hidden { display: none; }
 
-        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner, kompaktnější + centrovaný text) ===== */
-
-        /* schování nativních šipek */
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield; /* Firefox */
-        }
-
-        .number-input {
-            display: inline-flex;          /* „objímá“ obsah */
-            align-items: stretch;
-            background: #020617;
-            border-radius: 8px;
-            border: 1px solid #4b5563;
-            overflow: hidden;
-            height: 28px;                  /* celková výška komponenty */
-        }
-
-        .number-input input {
-            border: none;
-            background: transparent;
-            color: #f9fafb;
-            padding: 0 8px;               /* jen horizontální padding */
-            font-size: 0.9rem;
-            flex: 1;
-            line-height: 28px;            /* text + placeholder vertikálně uprostřed */
-        }
-
-        .number-input input:focus {
-            outline: none;
-        }
-
-        .spinner-buttons {
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid #4b5563;
-            height: 100%;                 /* zabere celou výšku komponenty */
-        }
-
-        .spinner-btn {
-            border-radius: 0;
-            padding: 0;
-            width: 26px;
-            height: 50%;                  /* dvě tlačítka = celá výška */
-            background: #020617;
-            border: none;
+        /* ===== INPUT S IKONOU (PrimeIcons) ===== */
+        .input-with-icon {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background 0.12s, color 0.12s;
         }
 
-        .spinner-btn i {
-            font-size: 0.7rem;
+        .input-with-icon input {
+            padding-left: 36px; /* místo pro ikonku vlevo */
+        }
+
+        .input-with-icon .pi {
+            position: absolute;
+            left: 10px;
             color: #9ca3af;
+            font-size: 1rem;
+            pointer-events: none; /* klik prochází na input */
         }
 
-        .spinner-btn:hover {
-            background: #111827;
-        }
-
-        .spinner-btn:hover i {
-            color: #e5e7eb;
-        }
-
-        .spinner-btn:active {
-            background: #1f2937;
+        .input-with-icon input:focus ~ .pi {
+            color: #3b82f6;
         }
 
         @media (max-width: 600px) {
@@ -293,22 +243,15 @@
             <h2>Nastavit odpočet</h2>
             <label for="minutesInput">Počet minut (1–600):</label>
 
-            <!-- Kompaktní custom number input se šipkami vpravo -->
-            <div class="number-input">
+            <!-- INPUT S PRIMEICON (pi pi-clock) -->
+            <div class="input-with-icon">
                 <input
                     type="number"
                     id="minutesInput"
                     min="1"
                     max="600"
                     placeholder="Zadejte počet minut">
-                <div class="spinner-buttons">
-                    <button type="button" class="spinner-btn spinner-up">
-                        <i class="pi pi-chevron-up"></i>
-                    </button>
-                    <button type="button" class="spinner-btn spinner-down">
-                        <i class="pi pi-chevron-down"></i>
-                    </button>
-                </div>
+                <i class="pi pi-clock"></i>
             </div>
 
             <div class="modal-actions">
@@ -358,31 +301,6 @@ const saveCountdownBtn = document.getElementById('saveCountdownBtn');
 const noteModal = document.getElementById('noteModal');
 const noteInput = document.getElementById('noteInput');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
-
-// Šipky (spinner) u inputu
-const spinnerUp = document.querySelector('.spinner-up');
-const spinnerDown = document.querySelector('.spinner-down');
-
-function clampMinutes(value) {
-    if (isNaN(value)) value = 0;
-    if (value < 1) return 1;
-    if (value > 600) return 600;
-    return value;
-}
-
-function adjustMinutes(delta) {
-    let current = parseInt(minutesInput.value, 10);
-    if (isNaN(current)) current = 0;
-    let next = clampMinutes(current + delta);
-    minutesInput.value = next;
-}
-
-if (spinnerUp) {
-    spinnerUp.addEventListener('click', () => adjustMinutes(1));
-}
-if (spinnerDown) {
-    spinnerDown.addEventListener('click', () => adjustMinutes(-1));
-}
 
 function formatTime(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
@@ -448,10 +366,7 @@ function startTimer() {
 function stopTimer() {
     if (!isRunning) return;
     isRunning = false;
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    clearInterval(timerInterval);
     remainingMs = Math.max(0, endTime - Date.now());
     startStopBtn.textContent = "Start";
     startStopBtn.classList.remove("running");
@@ -461,10 +376,7 @@ function stopTimer() {
 
 function resetTimer() {
     if (!initialDurationMs) return;
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    clearInterval(timerInterval);
     remainingMs = initialDurationMs;
     endTime = null;
     isRunning = false;
@@ -489,10 +401,7 @@ saveCountdownBtn.addEventListener("click", () => {
 
     initialDurationMs = minutes * 60000;
     remainingMs = initialDurationMs;
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
+    clearInterval(timerInterval);
     isRunning = false;
     endTime = null;
 
