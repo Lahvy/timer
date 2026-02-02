@@ -181,7 +181,7 @@
 
         .hidden { display: none; }
 
-        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner) ===== */
+        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner, kompaktnější) ===== */
 
         /* schování nativních šipek */
         input[type="number"]::-webkit-outer-spin-button,
@@ -194,10 +194,10 @@
         }
 
         .number-input {
-            display: flex;
+            display: inline-flex;          /* „objímá“ obsah */
             align-items: stretch;
             background: #020617;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid #4b5563;
             overflow: hidden;
         }
@@ -206,9 +206,10 @@
             border: none;
             background: transparent;
             color: #f9fafb;
-            padding: 8px 10px;
-            font-size: 0.95rem;
+            padding: 4px 8px;              /* menší vertikální padding */
+            font-size: 0.9rem;
             flex: 1;
+            height: 26px;                  /* celková výška inputu */
         }
 
         .number-input input:focus {
@@ -224,8 +225,8 @@
         .spinner-btn {
             border-radius: 0;
             padding: 0;
-            width: 28px;
-            height: 18px;
+            width: 26px;
+            height: 13px;                  /* 2x13 = 26 -> zarovnání s inputem */
             background: #020617;
             border: none;
             display: flex;
@@ -290,7 +291,7 @@
             <h2>Nastavit odpočet</h2>
             <label for="minutesInput">Počet minut (1–600):</label>
 
-            <!-- Custom number input se šipkami vpravo -->
+            <!-- Kompaktní custom number input se šipkami vpravo -->
             <div class="number-input">
                 <input
                     type="number"
@@ -461,7 +462,7 @@ function resetTimer() {
     isRunning = false;
     startStopBtn.textContent = "Start";
     startStopBtn.classList.remove("running");
-    timerEl.classList.remove("finished");
+   shed");
     updateTimer();
     updateEndTime();
     setStatus("Odpočet resetován.");
