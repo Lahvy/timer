@@ -200,7 +200,6 @@
             pointer-events: none; /* klik prochází na input */
         }
 
-        .input-with-icon input:focus + .pi,
         .input-with-icon input:focus ~ .pi {
             color: #3b82f6;
         }
@@ -299,7 +298,8 @@ const minutesInput = document.getElementById('minutesInput');
 const saveCountdownBtn = document.getElementById('saveCountdownBtn');
 
 const noteModal = document.getElementById('noteModal');
-const noteInput = document.get saveNoteBtn = document.getElementById('saveNoteBtn');
+const noteInput = document.getElementById('noteInput');
+const saveNoteBtn = document.getElementById('saveNoteBtn');
 
 function formatTime(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
