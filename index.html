@@ -75,7 +75,7 @@
         }
 
         #timer {
-            font-size: clamp(4rem, 20vw, 9rem); /* velké číslice */
+            font-size: clamp(4rem, 20vw, 9rem);
             font-weight: 700;
             letter-spacing: 0.08em;
             text-align: center;
@@ -83,7 +83,7 @@
         }
 
         #timer.finished {
-            color: #f97316; /* oranžová při skončení */
+            color: #f97316;
             animation: pulse 1s infinite;
         }
 
@@ -275,50 +275,3 @@
         }
 
         /* ===== RESPONSIVITA ===== */
-        @media (max-width: 600px) {
-            .controls {
-                gap: 8px;
-            }
-
-            button {
-                padding: 7px 14px;
-                font-size: 0.85rem;
-            }
-        }
-    </style>
-</head>
-<body>
-<div class="app">
-    <header>
-        <h1>Časomíra schůzky</h1>
-        <div id="noteDisplay" class="note-display placeholder">
-            Přidej si poznámku (např. „Přestávka“) tlačítkem níže.
-        </div>
-    </header>
-
-    <main>
-        <div class="timer-display">
-            <span id="timer">00:00</span>
-        </div>
-
-        <div class="end-time">
-            <span id="endTimeLabel">Konec v: <strong>--:--</strong></span>
-        </div>
-
-        <div class="controls">
-            <button id="newCountdownBtn">Nový odpočet</button>
-            <button id="startStopBtn" disabled>Start</button>
-            <button id="resetBtn" disabled>Reset</button>
-            <button id="noteBtn">Poznámka</button>
-            <button id="fullscreenBtn">Celá obrazovka</button>
-        </div>
-
-        <div id="statusMessage" class="status-message"></div>
-    </main>
-
-    <footer>
-        Jednoduchá časomíra pro schůzky – HTML / CSS / JavaScript
-    </footer>
-
-    <!-- Modál: nový odpočet -->
-    <div id="countdownModal" class="modal-overlay hidden">
