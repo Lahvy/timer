@@ -275,3 +275,350 @@
         }
 
         /* ===== RESPONSIVITA ===== */
+        @media (max-width: 600px) {
+            .controls {
+                gap: 8px;
+            }
+
+            button {
+                padding: 7px 14px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <header>
+        <h1>Časomíra schůzky</h1>
+        <div id="noteDisplay" class="note-display placeholder">
+            Přidej si poznámku (např. „Přestávka“) tlačítkem níže.
+        </div>
+    </header>
+
+    <main>
+        <div class="timer-display">
+            <span id="timer">00:00</span>
+        </div>
+
+        <div class="end-time">
+            <span id="endTimeLabel">Konec v: <strong>--:--</strong></span>
+        </div>
+
+        <div class="controls">
+            <button id="newCountdownBtn">Nový odpočet</button>
+            <button id="startStopBtn" disabled>Start</button>
+            <button id="resetBtn" disabled>Reset</button>
+            <button id="noteBtn">Poznámka</button>
+            <button id="fullscreenBtn">Celá obrazovka</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+    </main>
+
+    <footer>
+        Jednoduchá časomíra pro schůzky – HTML / CSS / JavaScript
+    </footer>
+
+    <!-- Modál: nový odpočet -->
+    <div id="countdownModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Nastavit odpočet</h2>
+            <label for="minutesInput">
+                Počet minut (1 – 600):
+            </label>
+            <input type="number" id="minutesInput" min="1" max="600" value="5">
+            <div class="modal-actions">
+                <button class="btn-secondary" data-close-modal="countdownModal">Zrušit</button>
+                <button class="btn-primary" id="saveCountdownBtn">Uložit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modál: poznámka -->
+    <div id="noteModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Nastavit poznámku</h2>
+            <label for="noteInput">
+                Text poznámky (např. „Přestávka“, „Začínáme za chvíli“…):
+            </label>
+            <textarea id="noteInput" placeholder="Přestávka"></textarea>
+            <div class="modal-actions">
+                <button class="btn-secondary" data-close-modal="noteModal">Zrušit</button>
+                <button class="btn-primary" id="saveNoteBtn">Uložit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== PROMĚNNÉ STAVU =====
+    let initialDurationMs = 0;
+    let remainingMs = 0;
+    let timerInterval = null;
+    let isRunning = false;
+    let endTime = null;
+
+    // ===== ELEMENTY Z DOMU =====
+    const timerEl = document.getElementById('timer');
+    const endTimeLabelEl = document.getElementById('endTimeLabel');
+    const statusMessageEl = document.getElementById('statusMessage');
+    const noteDisplayEl = document.getElementById('noteDisplay');
+
+    const newCountdownBtn = document.getElementById('newCountdownBtn');
+    const startStopBtn = document.getElementById('startStopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const noteBtn = document.getElementById('noteBtn');
+
+    const countdownModal = document.getElementById('countdownModal');
+    const minutesInput = document.getElementById('minutesInput');
+    const saveCountdownBtn = document.getElementById('saveCountdownBtn');
+
+    const noteModal = document.getElementById('noteModal');
+    const noteInput = document.getElementById('noteInput');
+    const saveNoteBtn = document.getElementById('saveNoteBtn');
+
+    // ===== POMOCNÉ FUNKCE FORMÁTOVÁNÍ =====
+    function formatTime(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        const m = String(minutes).padStart(2, '0');
+        const s = String(seconds).padStart(2, '0');
+        return m + ':' + s;
+    }
+
+    function formatClock(date) {
+        if (!date) return '--:--';
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return hours + ':' + minutes;
+    }
+
+    function updateTimerDisplay() {
+        timerEl.textContent = formatTime(remainingMs);
+    }
+
+    function updateEndTimeDisplay() {
+        const text = formatClock(endTime);
+        endTimeLabelEl.innerHTML = 'Konec v: <strong>' + text + '</strong>';
+    }
+
+    function setStatus(message) {
+        statusMessageEl.textContent = message || '';
+    }
+
+    // ===== MODÁLY =====
+    function openModal(modalEl) {
+        modalEl.classList.remove('hidden');
+    }
+
+    function closeModal(modalEl) {
+        modalEl.classList.add('hidden');
+    }
+
+    // Zavírání modálů klikem mimo obsah
+    [countdownModal, noteModal].forEach(function(modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                closeModal(modal);
+            }
+        });
+    });
+
+    // Zavírání modálů tlačítkem "Zrušit"
+    var closeButtons = document.querySelectorAll('[data-close-modal]');
+    closeButtons.forEach(function(btn) {
+        btn.addEventListener('click', function(event) {
+            var modalId = event.currentTarget.getAttribute('data-close-modal');
+            var modalEl = document.getElementById(modalId);
+            if (modalEl) {
+                closeModal(modalEl);
+            }
+        });
+    });
+
+    // ===== LOGIKA ODPOČTU =====
+    function startTimer() {
+        if (initialDurationMs <= 0) {
+            setStatus('Nejprve nastav odpočet.');
+            return;
+        }
+
+        if (remainingMs <= 0) {
+            remainingMs = initialDurationMs;
+        }
+
+        endTime = new Date(Date.now() + remainingMs);
+        updateEndTimeDisplay();
+
+        isRunning = true;
+        startStopBtn.textContent = 'Stop';
+        startStopBtn.classList.add('running');
+        timerEl.classList.remove('finished');
+        setStatus('Odpočet běží…');
+
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+
+        timerInterval = setInterval(function() {
+            var now = Date.now();
+            remainingMs = endTime - now;
+
+            if (remainingMs <= 0) {
+                remainingMs = 0;
+                updateTimerDisplay();
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isRunning = false;
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('running');
+                timerEl.classList.add('finished');
+                setStatus('Čas vypršel.');
+            } else {
+                updateTimerDisplay();
+            }
+        }, 200);
+
+        updateTimerDisplay();
+    }
+
+    function stopTimer() {
+        if (!isRunning) return;
+
+        isRunning = false;
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        remainingMs = Math.max(0, endTime - Date.now());
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        setStatus('Odpočet pozastaven.');
+        updateTimerDisplay();
+    }
+
+    function resetTimer() {
+        if (initialDurationMs <= 0) return;
+
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        isRunning = false;
+        remainingMs = initialDurationMs;
+        endTime = null;
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        timerEl.classList.remove('finished');
+        updateTimerDisplay();
+        updateEndTimeDisplay();
+        setStatus('Odpočet resetován.');
+    }
+
+    // ===== HANDLERY TLAČÍTEK =====
+    newCountdownBtn.addEventListener('click', function() {
+        openModal(countdownModal);
+        minutesInput.focus();
+        minutesInput.select();
+    });
+
+    saveCountdownBtn.addEventListener('click', function() {
+        var minutes = parseInt(minutesInput.value, 10);
+
+        if (isNaN(minutes) || minutes < 1 || minutes > 600) {
+            setStatus('Zadej prosím počet minut mezi 1 a 600.');
+            return;
+        }
+
+        initialDurationMs = minutes * 60 * 1000;
+        remainingMs = initialDurationMs;
+
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        isRunning = false;
+        endTime = null;
+        startStopBtn.textContent = 'Start';
+        startStopBtn.classList.remove('running');
+        timerEl.classList.remove('finished');
+
+        updateTimerDisplay();
+        updateEndTimeDisplay();
+        setStatus('Odpočet nastaven na ' + minutes + ' minut.');
+        startStopBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        closeModal(countdownModal);
+    });
+
+    startStopBtn.addEventListener('click', function() {
+        if (isRunning) {
+            stopTimer();
+        } else {
+            startTimer();
+        }
+    });
+
+    resetBtn.addEventListener('click', function() {
+        resetTimer();
+    });
+
+    noteBtn.addEventListener('click', function() {
+        var currentNote = noteDisplayEl.classList.contains('placeholder')
+            ? ''
+            : noteDisplayEl.textContent;
+        noteInput.value = currentNote;
+        openModal(noteModal);
+        noteInput.focus();
+        noteInput.select();
+    });
+
+    saveNoteBtn.addEventListener('click', function() {
+        var text = noteInput.value.trim();
+        if (text === '') {
+            noteDisplayEl.textContent = 'Přidej si poznámku (např. „Přestávka“) tlačítkem níže.';
+            noteDisplayEl.classList.add('placeholder');
+        } else {
+            noteDisplayEl.textContent = text;
+            noteDisplayEl.classList.remove('placeholder');
+        }
+        closeModal(noteModal);
+    });
+
+    // ===== CELÁ OBRAZOVKA =====
+    function updateFullscreenButton() {
+        if (document.fullscreenElement) {
+            fullscreenBtn.textContent = 'Ukončit celou obrazovku';
+        } else {
+            fullscreenBtn.textContent = 'Celá obrazovka';
+        }
+    }
+
+    fullscreenBtn.addEventListener('click', function() {
+        if (!document.fullscreenElement) {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else {
+                setStatus('Prohlížeč nepodporuje režim celé obrazovky.');
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    });
+
+    document.addEventListener('fullscreenchange', updateFullscreenButton);
+
+    // ===== START: inicializace =====
+    updateTimerDisplay();
+    updateEndTimeDisplay();
+    setStatus('Nastav odpočet tlačítkem „Nový odpočet“.');
+</script>
+</body>
+</html>
