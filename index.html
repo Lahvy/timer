@@ -184,33 +184,79 @@
 
         .hidden { display:none; }
 
-        /* === UPRAVA INPUTU – ODSTRANĚNÍ IKONY A STYL ŠIPEK === */
+        /* === PRIME-NG STYLE INPUT S VLASTNÍMI ŠIPKAMI === */
 
-        /* 1) Skryj celou levou ikonku PrimeIcons */
-        .input-with-icon i.pi {
-            display: none !important;
+        /* wrapper kolem inputu + šipek */
+        .input-with-icon {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #4b5563;
+            background: #020617;
+            overflow: hidden;
         }
 
-        /* 2) Úprava nativních šipek, aby ladily s dark UI */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            opacity: 1;
+        .input-with-icon input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #f9fafb;
+            padding: 8px 10px;
+            font-size: 0.95rem;
+        }
+
+        .input-with-icon input:focus {
+            outline: none;
+        }
+
+        /* schování nativních šipek, protože máme vlastní */
+        .input-with-icon input[type="number"]::-webkit-outer-spin-button,
+        .input-with-icon input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .input-with-icon input[type="number"] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+
+        .spinner-buttons {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #374151;
+        }
+
+        .spinner-btn {
+            border-radius: 0;
+            padding: 0;
+            width: 24px;
+            height: 50%;
+            background: #020617;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+        }
+
+        .spinner-btn i {
+            font-size: 0.7rem;
+            color: #9ca3af;
+        }
+
+        .spinner-btn:hover {
             background: #111827;
-            border-radius: 4px;
-            width: 18px;
-            height: 18px;
-            margin-left: 4px;
         }
 
-        input[type=number]::-webkit-inner-spin-button:hover {
+        .spinner-btn:hover i {
+            color: #e5e7eb;
+        }
+
+        .spinner-btn:active {
             background: #1f2937;
         }
-
-        input[type=number]::-webkit-inner-spin-button:active {
-            background: #374151;
-        }
-
-        /* Firefox (bohužel neumí šipky stylovat -> necháme default) */
 
         @media (max-width: 600px) {
             button { font-size:0.85rem; padding:7px 14px; }
@@ -257,7 +303,14 @@
                     min="1"
                     max="600"
                     placeholder="Zadejte počet minut">
-                <!-- ikona vlevo byla odstraněna -->
+                <div class="spinner-buttons">
+                    <button type="button" class="spinner-btn spinner-up">
+                        <i class="pi pi-chevron-up"></i>
+                    </button>
+                    <button type="button" class="spinner-btn spinner-down">
+                        <i class="pi pi-chevron-down"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -282,7 +335,7 @@
 </div>
 
 <script>
-/* JS KÓD – TVOJE FUNKČNÍ VERZE BEZ ZMĚN (jen zkopírován) */
+/* ===== LOGIKA A OVLÁDÁNÍ ===== */
 
 let initialDurationMs = 0;
 let remainingMs = 0;
@@ -308,6 +361,31 @@ const saveCountdownBtn = document.getElementById('saveCountdownBtn');
 const noteModal = document.getElementById('noteModal');
 const noteInput = document.getElementById('noteInput');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
+
+// Šipky (PrimeIcons spinner) – PrimeNG-like chování
+const spinnerUp = document.querySelector('.spinner-up');
+const spinnerDown = document.querySelector('.spinner-down');
+
+function clampMinutes(value) {
+    if (isNaN(value)) value = 0;
+    if (value < 1) return 1;
+    if (value > 600) return 600;
+    return value;
+}
+
+function adjustMinutes(delta) {
+    let current = parseInt(minutesInput.value, 10);
+    if (isNaN(current)) current = 0;
+    const next = clampMinutes(current + delta);
+    minutesInput.value = next;
+}
+
+if (spinnerUp) {
+    spinnerUp.addEventListener('click', () => adjustMinutes(1));
+}
+if (spinnerDown) {
+    spinnerDown.addEventListener('click', () => adjustMinutes(-1));
+}
 
 function formatTime(ms) {
     const total = Math.max(0, Math.floor(ms/1000));
@@ -468,3 +546,4 @@ setStatus("Nastav odpočet tlačítkem „Nový odpočet“.");
 </script>
 </body>
 </html>
+``
