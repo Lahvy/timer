@@ -181,27 +181,75 @@
 
         .hidden { display: none; }
 
-        /* ===== INPUT S IKONOU (PrimeIcons) ===== */
-        .input-with-icon {
-            position: relative;
+        /* ===== CUSTOM NUMBER INPUT (stylizovaný spinner) ===== */
+
+        /* schování nativních šipek */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+
+        .number-input {
+            display: flex;
+            align-items: stretch;
+            background: #020617;
+            border-radius: 10px;
+            border: 1px solid #4b5563;
+            overflow: hidden;
+        }
+
+        .number-input input {
+            border: none;
+            background: transparent;
+            color: #f9fafb;
+            padding: 8px 10px;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .number-input input:focus {
+            outline: none;
+        }
+
+        .spinner-buttons {
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #4b5563;
+        }
+
+        .spinner-btn {
+            border-radius: 0;
+            padding: 0;
+            width: 28px;
+            height: 18px;
+            background: #020617;
+            border: none;
             display: flex;
             align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
         }
 
-        .input-with-icon input {
-            padding-left: 36px; /* místo pro ikonku vlevo */
-        }
-
-        .input-with-icon .pi {
-            position: absolute;
-            left: 10px;
+        .spinner-btn i {
+            font-size: 0.7rem;
             color: #9ca3af;
-            font-size: 1rem;
-            pointer-events: none; /* klik prochází na input */
         }
 
-        .input-with-icon input:focus ~ .pi {
-            color: #3b82f6;
+        .spinner-btn:hover {
+            background: #111827;
+        }
+
+        .spinner-btn:hover i {
+            color: #e5e7eb;
+        }
+
+        .spinner-btn:active {
+            background: #1f2937;
         }
 
         @media (max-width: 600px) {
@@ -242,15 +290,22 @@
             <h2>Nastavit odpočet</h2>
             <label for="minutesInput">Počet minut (1–600):</label>
 
-            <!-- INPUT S PRIMEICON (pi pi-clock) -->
-            <div class="input-with-icon">
+            <!-- Custom number input se šipkami vpravo -->
+            <div class="number-input">
                 <input
                     type="number"
                     id="minutesInput"
                     min="1"
                     max="600"
                     placeholder="Zadejte počet minut">
-                <i class="pi pi-clock"></i>
+                <div class="spinner-buttons">
+                    <button type="button" class="spinner-btn spinner-up">
+                        <i class="pi pi-chevron-up"></i>
+                    </button>
+                    <button type="button" class="spinner-btn spinner-down">
+                        <i class="pi pi-chevron-down"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -300,6 +355,31 @@ const saveCountdownBtn = document.getElementById('saveCountdownBtn');
 const noteModal = document.getElementById('noteModal');
 const noteInput = document.getElementById('noteInput');
 const saveNoteBtn = document.getElementById('saveNoteBtn');
+
+// Šipky (spinner) u inputu
+const spinnerUp = document.querySelector('.spinner-up');
+const spinnerDown = document.querySelector('.spinner-down');
+
+function clampMinutes(value) {
+    if (isNaN(value)) value = 0;
+    if (value < 1) return 1;
+    if (value > 600) return 600;
+    return value;
+}
+
+function adjustMinutes(delta) {
+    let current = parseInt(minutesInput.value, 10);
+    if (isNaN(current)) current = 0;
+    let next = clampMinutes(current + delta);
+    minutesInput.value = next;
+}
+
+if (spinnerUp) {
+    spinnerUp.addEventListener('click', () => adjustMinutes(1));
+}
+if (spinnerDown) {
+    spinnerDown.addEventListener('click', () => adjustMinutes(-1));
+}
 
 function formatTime(ms) {
     const total = Math.max(0, Math.floor(ms / 1000));
