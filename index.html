@@ -112,7 +112,8 @@
         #newCountdownBtn { background: #2563eb; color: white; }
         #startStopBtn { background: #16a34a; color: white; }
         #startStopBtn.running { background: #ea580c; }
-        #noteBtn, #resetBtn, #fullscreenBtn {
+
+        #noteBtn, #resetBtn, #fullscreenBtn, #addMinuteBtn {
             background: #111827;
             color: #e5e7eb;
             border: 1px solid #374151;
@@ -145,7 +146,6 @@
             width: min(420px, 92vw);
         }
 
-        /* trochu větší mezera pod nadpisem */
         .modal h2 {
             margin-bottom: 14px;
             font-size: 1.1rem;
@@ -155,7 +155,7 @@
             font-size: 0.95rem;
             color: #e5e7eb;
             display: block;
-            margin-bottom: 6px; /* mezera mezi textem labelu a inputem */
+            margin-bottom: 6px;
         }
 
         .modal input,
@@ -180,7 +180,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 8px;
-            margin-top: 14px;  /* mezera mezi inputem a tlačítky dole */
+            margin-top: 14px;
         }
 
         .btn-secondary { background: #111827; color:white; border:1px solid #4b5563; }
@@ -198,7 +198,7 @@
             border: 1px solid #4b5563;
             background: #020617;
             overflow: hidden;
-            margin-top: 4px;     /* malý odstup od labelu */
+            margin-top: 4px;
         }
 
         .input-with-icon input {
@@ -214,7 +214,6 @@
             outline: none;
         }
 
-        /* schování nativních šipek, protože máme vlastní */
         .input-with-icon input[type="number"]::-webkit-outer-spin-button,
         .input-with-icon input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -285,6 +284,7 @@
             <button id="newCountdownBtn">Nový odpočet</button>
             <button id="startStopBtn" disabled>Start</button>
             <button id="resetBtn" disabled>Reset</button>
+            <button id="addMinuteBtn" disabled>+1 min</button>
             <button id="noteBtn">Poznámka</button>
             <button id="fullscreenBtn">Celá obrazovka</button>
         </div>
@@ -355,6 +355,7 @@ const noteDisplayEl = document.getElementById('noteDisplay');
 const newCountdownBtn = document.getElementById('newCountdownBtn');
 const startStopBtn = document.getElementById('startStopBtn');
 const resetBtn = document.getElementById('resetBtn');
+const addMinuteBtn = document.getElementById('addMinuteBtn');
 const noteBtn = document.getElementById('noteBtn');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 
@@ -385,7 +386,6 @@ function playEndSound() {
         }
 
         const now = audioContext.currentTime;
-
         const baseGain = 0.2;
 
         const notes = [
@@ -541,6 +541,28 @@ function resetTimer() {
     setStatus("Odpočet resetován.");
 }
 
+// NOVÁ FUNKCE: přidání jedné minuty k aktuálnímu odpočtu
+function addOneMinute() {
+    // pokud není nic nastaveno, neděláme nic
+    if (initialDurationMs <= 0 && remainingMs <= 0) {
+        setStatus("Nejprve nastav odpočet.");
+        return;
+    }
+
+    remainingMs += 60000; // +1 min v milisekundách
+    updateTimer();
+
+    // pokud časovač běží, posuneme i očekávaný konec
+    if (isRunning && endTime) {
+        endTime = new Date(endTime.getTime() + 60000);
+        updateEndTime();
+        setStatus("Přidána 1 minuta k aktuálnímu odpočtu.");
+    } else {
+        // když je pauza / ještě neběží, konec se přepočítá při dalším startu
+        setStatus("Přidána 1 minuta, spusť nebo pokračuj v odpočtu.");
+    }
+}
+
 newCountdownBtn.addEventListener("click", ()=>{
     minutesInput.value="";
     openModal(countdownModal);
@@ -565,6 +587,7 @@ saveCountdownBtn.addEventListener("click", ()=>{
 
     startStopBtn.disabled=false;
     resetBtn.disabled=false;
+    addMinuteBtn.disabled=false;
 
     closeModal(countdownModal);
 });
@@ -574,6 +597,8 @@ startStopBtn.addEventListener("click", ()=>{
 });
 
 resetBtn.addEventListener("click", resetTimer);
+
+addMinuteBtn.addEventListener("click", addOneMinute);
 
 noteBtn.addEventListener("click", ()=>{
     noteInput.value = noteDisplayEl.classList.contains("placeholder") ? "" : noteDisplayEl.textContent;
@@ -609,3 +634,4 @@ setStatus("Nastav odpočet tlačítkem „Nový odpočet“.");
 </script>
 </body>
 </html>
+``
