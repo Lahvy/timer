@@ -11,15 +11,39 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: radial-gradient(circle at top, #1f2933, #020617);
-            color: #f9fafb;
-            min-height: 100vh;
-            display: flex;
-            align-items: stretch;
-            justify-content: center;
-        }
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #020617;
+    color: #f9fafb;
+    min-height: 100vh;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+}
+
+        /* ===== Vortex background ===== */
+#vortex-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+#vortex-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.app {
+    position: relative;
+    z-index: 1;
+}
+
+        
 
         .app {
             max-width: 960px;
@@ -268,6 +292,11 @@
 </head>
 
 <body>
+
+<div id="vortex-bg" aria-hidden="true">
+    <canvas id="vortex-canvas"></canvas>
+</div>
+    
 <div class="app">
     <header>
         <h1>Timer</h1>
@@ -628,9 +657,206 @@ document.addEventListener("fullscreenchange", ()=>{
     fullscreenBtn.textContent = document.fullscreenElement ? "Ukončit celou obrazovku" : "Celá obrazovka";
 });
 
+/* ===== VORTEX BACKGROUND (vanilla JS) ===== */
+function initVortexBackground() {
+    const canvas = document.getElementById("vortex-canvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    const config = {
+        particleCount: 550,
+        rangeY: 700,
+        baseHue: 215,          // modro-tyrkys tón; změň třeba na 120 pro zelený look
+        rangeHue: 40,
+        baseSpeed: 0.15,
+        rangeSpeed: 1.25,
+        baseRadius: 0.6,
+        rangeRadius: 1.8,
+        backgroundColor: "#020617",
+        trailAlpha: 0.16
+    };
+
+    let particles = [];
+    let tick = 0;
+    let center = { x: 0, y: 0 };
+    let width = 0;
+    let height = 0;
+    let animationId = null;
+
+    const TAU = Math.PI * 2;
+
+    function rand(n) {
+        return Math.random() * n;
+    }
+
+    function randRange(n) {
+        return n - rand(2 * n);
+    }
+
+    function fadeInOut(t, m) {
+        const hm = 0.5 * m;
+        return Math.abs(((t + hm) % m) - hm) / hm;
+    }
+
+    function lerp(a, b, t) {
+        return (1 - t) * a + b * t;
+    }
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+
+        center.x = width * 0.5;
+        center.y = height * 0.5;
+
+        initParticles();
+    }
+
+    function initParticle() {
+        return {
+            x: rand(width),
+            y: center.y + randRange(Math.min(config.rangeY, height * 0.9)),
+            vx: 0,
+            vy: 0,
+            life: 0,
+            ttl: 60 + rand(180),
+            speed: config.baseSpeed + rand(config.rangeSpeed),
+            radius: config.baseRadius + rand(config.rangeRadius),
+            hue: config.baseHue + rand(config.rangeHue)
+        };
+    }
+
+    function initParticles() {
+        particles = [];
+        tick = 0;
+        for (let i = 0; i < config.particleCount; i++) {
+            particles.push(initParticle());
+        }
+    }
+
+    function checkBounds(x, y) {
+        return x < -50 || x > width + 50 || y < -50 || y > height + 50;
+    }
+
+    function getFlowAngle(x, y, t) {
+        const dx = x - center.x;
+        const dy = y - center.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+        // základní "vortex" rotace kolem středu
+        const swirl = Math.atan2(dy, dx) + Math.PI / 2;
+
+        // jemná organická deformace pole
+        const wave =
+            Math.sin(x * 0.0023 + t * 0.012) * 0.9 +
+            Math.cos(y * 0.0021 - t * 0.01) * 0.7 +
+            Math.sin((x + y) * 0.0012 + t * 0.008) * 0.6;
+
+        // lehké zesílení směrem od středu
+        const radialBias = dist * 0.00075;
+
+        return swirl + wave + radialBias;
+    }
+
+    function drawParticle(p) {
+        const alpha = fadeInOut(p.life, p.ttl) * 0.8;
+        const x2 = p.x + p.vx * p.speed;
+        const y2 = p.y + p.vy * p.speed;
+
+        // glow vrstva
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineWidth = p.radius * 2.2;
+        ctx.strokeStyle = `hsla(${p.hue}, 100%, 60%, ${alpha * 0.10})`;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = `hsla(${p.hue}, 100%, 60%, ${alpha * 0.35})`;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        // hlavní čára
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineWidth = p.radius;
+        ctx.strokeStyle = `hsla(${p.hue}, 100%, 65%, ${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+
+        p.x = x2;
+        p.y = y2;
+        p.life += 1;
+    }
+
+    function animate() {
+        tick += 1;
+
+        // jemný trail místo tvrdého clearRect
+        ctx.fillStyle = `rgba(2, 6, 23, ${config.trailAlpha})`;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+
+            const angle = getFlowAngle(p.x, p.y, tick);
+            p.vx = lerp(p.vx, Math.cos(angle), 0.22);
+            p.vy = lerp(p.vy, Math.sin(angle), 0.22);
+
+            drawParticle(p);
+
+            if (checkBounds(p.x, p.y) || p.life > p.ttl) {
+                particles[i] = initParticle();
+            }
+        }
+
+        ctx.restore();
+
+        animationId = requestAnimationFrame(animate);
+    }
+
+    function resetBackground() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = config.backgroundColor;
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    window.addEventListener("resize", () => {
+        resizeCanvas();
+        resetBackground();
+    });
+
+    resizeCanvas();
+    resetBackground();
+
+    if (animationId) cancelAnimationFrame(animationId);
+    animate();
+}
+
+initVortexBackground();    
 updateTimer();
 updateEndTime();
 setStatus("Nastav odpočet tlačítkem „Nový odpočet“.");
+
+
 </script>
 </body>
 </html>
